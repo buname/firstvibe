@@ -1,0 +1,49 @@
+---
+alwaysApply: true
+description: BEX options analytics dashboard — project-wide rules for Cursor agents
+---
+
+# BEX Project Rules
+
+## Stack (do not change without asking)
+- **Next.js 16** App Router · **React 19** · **TypeScript**
+- **Tailwind 4** — CSS variables in `src/app/globals.css` + `@theme inline` block
+- **Recharts** — bar, line, compare, terminal mini-charts
+- **Plotly** (`react-plotly.js`) — Heatmap (2D + ladder), 3D Surface
+- **lucide-react** — icons only; no new icon libraries
+
+## Golden rules
+1. **No green-field rewrites.** Make small, targeted diffs to existing files.
+2. **Never touch** `node_modules/`, `.next/`, `code_dump.txt`, root `app.py`.
+3. **No new npm packages** without explaining why and getting user approval first.
+4. **One concern per diff** — don't reformat unrelated code while fixing a bug.
+5. **Read before editing** — open the file, understand the pattern, then change only what's asked.
+
+## Data contracts (do not break)
+- `src/hooks/useMarketData.ts` — returns `displaySpot` (index quote for NDX/SPX) **and** `spotPrice` (ETF chain math). Keep both; they differ for NDX/SPX symbols.
+- `src/lib/gex-engine.ts` — GEX formula is canonical. Do not alter math without documenting the reason.
+- `src/app/api/` routes (`quote`, `options`, `news`) — do not change response shape without updating callers.
+- **Compare pool:** `SPY, QQQ, IWM, AAPL` — live Yahoo + gex-engine. Do not swap or extend silently.
+- **Terminal:** real metrics + `lastUpdate` activity row — no fake/hardcoded log lines.
+
+## Per-tab rules (quick ref — full detail in AGENTS.md)
+- **Exposures** — 3-panel: horizontal GEX chart, Vanna/Charm charts, Major Walls panel. Props: `gexByStrike`, `keyLevels`, `spotPrice`, `chain`.
+- **Heatmap** — Plotly; expiry pills; single expiry → ladder (horizontal bar); ALL → 2D heatmap.
+- **Levels** — 4×2 card grid + price ruler; needs `keyLevels` + `atmIvPct`.
+- **Strike Table** — columns: STRIKE, DIST%, NET GEX, CALL GEX, PUT GEX, CALL OI, PUT OI, TOTAL OI, IV, GAMMA, CHARM; expiry filter tabs.
+- **Calendar** — OPEX countdown + schedule + macro events + `GlobeRiskPreview` at bottom + World News.
+- **Journal** — 5 tabs (Trade Journal, Equity Curve, MAE/MFE, Gallery, Calendar); localStorage persist.
+- **Bias** — thesis template + metrics; `live` prop → LIVE/DEMO badge.
+
+> For full product decisions and do-not-break list, see **repo root `AGENTS.md`**.
+
+## Quality bar
+- End every task with **`npx tsc --noEmit`** — must be clean.
+- Run `npm run lint` on changed files when feasible.
+- UI tasks: `npm run build` must not break.
+- Do **not** copy `.ts` source files into `public/` (Next.js typecheck trap).
+
+## Screenshots (reference UI)
+Opacity-style target. Reference screenshots are on the user's Desktop:
+`~/Desktop/Screenshot 2026-04-12 at 08.5*.png`
+Check them when implementing a tab to match layout, typography, and color conventions.

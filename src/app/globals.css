@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #080808;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #111111;
+  --bg-elevated: #161616;
+  --border-color: #222222;
+  --border-accent: #333333;
+  --text-primary: #f0f0f0;
+  --text-secondary: #999999;
+  --text-muted: #666666;
+  --accent-green: #00ff88;
+  --accent-red: #ff4444;
+  --accent-yellow: #f5a623;
+  --accent-blue: #4a9fff;
+  --accent-cyan: #06b6d4;
+  --accent-purple: #8b5cf6;
+  --accent-purple-dim: #7c3aed;
+}
+
+@theme inline {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-border-default: var(--border-color);
+  --color-border-accent: var(--border-accent);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-purple-dim: var(--accent-purple-dim);
+  --color-accent-green: var(--accent-green);
+  --color-accent-red: var(--accent-red);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-cyan: var(--accent-cyan);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #222222 transparent;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(0, 255, 136, 0.2);
+  color: #fff;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 255, 136, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes news-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.animate-ticker {
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.animate-news-scroll {
+  animation: news-scroll 40s linear infinite;
+}
+
+.glow-green {
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.1);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #f0f0f0 0%, #00ff88 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.recharts-wrapper,
+.recharts-surface {
+  background: transparent !important;
+}
+
+.recharts-cartesian-grid-bg {
+  fill: transparent !important;
+}
+
+.recharts-legend-item-text {
+  color: #999999 !important;
+}
+
+.recharts-default-tooltip {
+  background: #111111 !important;
+  border: 1px solid #222222 !important;
+  border-radius: 4px !important;
+}
+
+.recharts-tooltip-label {
+  color: #f0f0f0 !important;
+}
+
+.recharts-tooltip-item {
+  color: #999999 !important;
+}
+
+svg.recharts-surface {
+  overflow: visible;
+}
+
+.recharts-wrapper svg {
+  background: transparent !important;
+}
+
+.js-plotly-plot .plotly .main-svg {
+  background: transparent !important;
+}

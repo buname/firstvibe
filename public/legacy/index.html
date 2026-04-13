@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Legacy bundle</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        color: #888;
+        font: 12px/1.4 system-ui, sans-serif;
+      }
+      #legacy-fallback {
+        padding: 12px 16px;
+        max-width: 42rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="legacy-fallback">
+      Loading legacy bundle… If nothing appears, the original HTML shell from your
+      source project may still be required alongside <code>app.min.js</code>.
+      Chart.js, Hammer, and chartjs-plugin-zoom are loaded from
+      <code>./npm/</code> before <code>app.min.js</code>.
+    </div>
+    <!-- Same stack as Downloads/npm — order matters for globals (Chart, Hammer). -->
+    <script src="./npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="./npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="./npm/chartjs-plugin-zoom@2.0.1/chartjs-plugin-zoom.min.js"></script>
+    <script src="./app.min.js"></script>
+  </body>
+</html>

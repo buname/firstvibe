@@ -1,0 +1,7 @@
+streamlit
+yfinance
+pandas
+scipy
+matplotlib
+gspread
+google-auth
