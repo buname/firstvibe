@@ -71,7 +71,7 @@ export default function DashboardFooter({
   };
 
   return (
-    <footer className="flex h-9 min-h-9 shrink-0 items-stretch gap-0 overflow-x-auto border-t border-white/[0.06] bg-black px-1 shadow-[0_-10px_28px_rgba(0,0,0,0.55)]">
+    <footer className="panel-sheen flex h-9 min-h-9 shrink-0 items-stretch gap-0 overflow-x-auto border-t border-white/[0.06] bg-black px-1 shadow-[0_-10px_28px_rgba(0,0,0,0.55)]">
       <div className="flex items-center gap-2 px-2.5 border-r border-[#1f1f1f] shrink-0">
         <span className="font-mono text-[10px] font-bold text-white tracking-tight">
           {symbol}
@@ -87,7 +87,7 @@ export default function DashboardFooter({
       {items.map((item) => (
         <div
           key={item.label}
-          className="flex items-center gap-1.5 px-2.5 border-r border-[#1f1f1f] last:border-r-0 shrink-0"
+          className="flex items-center gap-1.5 px-2.5 border-r border-[#1f1f1f] last:border-r-0 shrink-0 hover:bg-white/[0.02] transition-colors"
         >
           <span className="font-mono text-[9px] text-[#525252] tracking-[0.08em] uppercase">
             {item.label}

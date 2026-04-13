@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@types/react-plotly.js": "^2.6.4",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
@@ -18,10 +20,12 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "19.2.4",
+    "react-globe.gl": "^2.37.1",
     "react-plotly.js": "^2.6.0",
     "recharts": "^3.8.1",
     "sonner": "^2.0.7",
-    "tesseract.js": "^7.0.0"
+    "tesseract.js": "^7.0.0",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

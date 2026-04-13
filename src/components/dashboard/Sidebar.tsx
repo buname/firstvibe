@@ -73,7 +73,7 @@ export default function Sidebar({
 }: Props) {
   return (
     <aside
-      className={`h-full bg-black border-r border-white/[0.06] flex flex-col transition-all duration-200 ${
+      className={`h-full bg-black border-r border-white/[0.06] flex flex-col transition-all duration-200 panel-sheen ${
         collapsed ? "w-12" : "w-[200px]"
       }`}
     >
@@ -125,8 +125,8 @@ export default function Sidebar({
                       style={{ opacity: fade }}
                       className={`flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-xs transition-colors ${
                         active
-                          ? "bg-[#262626] font-medium text-white"
-                          : "font-normal text-neutral-500 hover:bg-white/[0.04] hover:text-neutral-300"
+                          ? "bg-gradient-to-r from-[#2a2a2a] to-[#202020] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] font-medium text-white"
+                          : "font-normal text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-300"
                       } ${collapsed ? "justify-center px-0" : ""}`}
                     >
                       {Icon && (

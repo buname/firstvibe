@@ -125,7 +125,7 @@ export default function Header({
 
   return (
     <div className="shrink-0">
-      <header className="flex h-12 items-center gap-2 border-b border-white/[0.06] bg-black px-2 sm:gap-3 sm:px-3">
+      <header className="panel-sheen flex h-12 items-center gap-2 border-b border-white/[0.06] bg-black px-2 sm:gap-3 sm:px-3">
         <div className="flex flex-col leading-none">
           <span className="text-[11px] font-bold text-white tracking-tight font-mono lowercase">
             bex
@@ -138,7 +138,7 @@ export default function Header({
         <div className="relative" ref={ref}>
           <button
             onClick={() => setOpen(!open)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111] border border-[#222] hover:border-[#333] transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111] border border-[#222] hover:border-[#3a3a3a] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.04)] transition-all"
           >
             <span className="font-mono font-bold text-sm text-[#f0f0f0]">
               {symbol}
@@ -323,7 +323,7 @@ export default function Header({
         </div>
       </header>
 
-      <div className="flex h-7 min-w-0 items-center overflow-hidden border-b border-white/[0.06] bg-black">
+      <div className="panel-sheen flex h-7 min-w-0 items-center overflow-hidden border-b border-white/[0.06] bg-black">
         <span className="shrink-0 border-r border-white/[0.08] px-3 py-1 text-[9px] font-medium uppercase tracking-[0.16em] text-neutral-600">
           Market news
         </span>

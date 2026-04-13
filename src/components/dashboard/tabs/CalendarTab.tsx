@@ -173,13 +173,24 @@ function fmtShort(d: Date): string {
   });
 }
 
+function daysUntilFromNow(dateStr: string, now: Date): number | null {
+  const p = new Date(`${dateStr}T12:00:00`);
+  if (Number.isNaN(p.getTime())) return null;
+  return Math.max(0, dteDays(now, p));
+}
+
 export default function CalendarTab({ chain }: Props) {
   const now = useMemo(() => new Date(), []);
   const [headlines, setHeadlines] = useState<Headline[]>([]);
   const [newsFilter, setNewsFilter] = useState<NewsFilter>("ALL");
-  const resilientNews = useResilientFetch<NewsPayload>({
+  const newsDegraded = useCallback((d: NewsPayload) => d.headlines.length < 4, []);
+  const {
+    run: runNewsFetch,
+    status: newsStatus,
+    updatedAt: newsUpdatedAt,
+  } = useResilientFetch<NewsPayload>({
     snapshotKey: NEWS_SNAPSHOT_KEY,
-    isDegraded: (d) => d.headlines.length < 4,
+    isDegraded: newsDegraded,
   });
   const [calMonth, setCalMonth] = useState(() => ({
     y: now.getFullYear(),
@@ -187,7 +198,7 @@ export default function CalendarTab({ chain }: Props) {
   }));
 
   const loadNews = useCallback(async () => {
-    const result = await resilientNews.run(async () => {
+    const result = await runNewsFetch(async () => {
       const res = await fetch("/api/news", { cache: "no-store" });
       if (!res.ok) throw new Error(`News failed (${res.status})`);
       const j = (await res.json()) as { headlines?: Headline[] };
@@ -199,7 +210,7 @@ export default function CalendarTab({ chain }: Props) {
     if (result.status === "stale") {
       toast.warning("News feed stale — showing last snapshot");
     }
-  }, [resilientNews]);
+  }, [runNewsFetch]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -214,9 +225,24 @@ export default function CalendarTab({ chain }: Props) {
 
   const countdowns = useMemo(
     () => [
-      { label: "NEXT OPEX", sub: "Weekly", target: nextWeekly },
-      { label: "MONTHLY OPEX", sub: "3rd Fri", target: nextMonthly },
-      { label: "QUARTERLY OPEX", sub: "Mar/Jun/Sep/Dec", target: nextQuarterly },
+      {
+        key: "weekly",
+        label: "WEEKLY OPEX",
+        sub: "Near-term hedging reset",
+        target: nextWeekly,
+      },
+      {
+        key: "monthly",
+        label: "MONTHLY OPEX",
+        sub: "Third Friday monthly cycle",
+        target: nextMonthly,
+      },
+      {
+        key: "quarterly",
+        label: "QUARTERLY OPEX",
+        sub: "Index roll pressure window",
+        target: nextQuarterly,
+      },
     ],
     [nextWeekly, nextMonthly, nextQuarterly]
   );
@@ -227,6 +253,11 @@ export default function CalendarTab({ chain }: Props) {
     () => getMacroEventsUpcoming(now, 12, 20),
     [now]
   );
+  const macroDateSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const e of macroUpcoming) s.add(e.date);
+    return s;
+  }, [macroUpcoming]);
 
   const { weeks, dim } = useMemo(() => {
     const { y, m } = calMonth;
@@ -285,7 +316,7 @@ export default function CalendarTab({ chain }: Props) {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-2 gap-2 text-[10px] font-mono">
+    <div className="flex flex-col p-2 gap-2 text-[10px] font-mono">
       <h2 className="text-xs font-bold tracking-wider text-[#e5e5e5] shrink-0 px-0.5">
         CALENDAR
       </h2>
@@ -294,22 +325,28 @@ export default function CalendarTab({ chain }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 shrink-0">
         {countdowns.map((c) => {
           const days = Math.max(0, dteDays(now, c.target));
+          const tone =
+            c.key === "monthly"
+              ? "border-rose-500/35 from-rose-500/10 to-[#0a0a0a]"
+              : c.key === "quarterly"
+                ? "border-violet-500/40 from-violet-500/10 to-[#0a0a0a]"
+                : "border-[#1e1e1e] from-[#0f0f0f] to-[#0a0a0a]";
           return (
             <div
-              key={c.label}
-              className="rounded border border-[#1e1e1e] bg-[#0a0a0a] px-3 py-2.5"
+              key={c.key}
+              className={`rounded border bg-gradient-to-b px-3 py-2.5 ${tone}`}
             >
               <div className="text-[8px] text-[#525252] tracking-widest">
                 {c.label}
               </div>
-              <div className="text-[9px] text-[#444] mb-1">{c.sub}</div>
+              <div className="text-[9px] text-[#5a5a5a] mb-1.5">{c.sub}</div>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-2xl font-bold text-[#f0f0f0] tabular-nums">
-                  {days}
+                <span className="text-4xl font-bold text-[#f0f0f0] tabular-nums leading-none">
+                  {days}d
                 </span>
                 <span className="text-[9px] text-[#737373] text-right">
-                  days
-                  <br />
+                  until
+                  <br className="hidden sm:block" />
                   {fmtShort(c.target)}
                 </span>
               </div>
@@ -319,7 +356,7 @@ export default function CalendarTab({ chain }: Props) {
       </div>
 
       {/* Middle: OPEX schedule | Macro + mini calendar */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
         {/* Left: OPEX schedule */}
         <div className="min-h-0 flex flex-col rounded border border-[#1e1e1e] bg-[#080808] overflow-hidden">
           <div className="px-2 py-1.5 border-b border-[#1a1a1a] text-[9px] font-bold tracking-widest text-[#555] uppercase shrink-0 flex items-center justify-between gap-2">
@@ -341,7 +378,7 @@ export default function CalendarTab({ chain }: Props) {
               return (
                 <div
                   key={d.toISOString()}
-                  className="flex items-center justify-between gap-2 px-2 py-1.5 border-b border-[#141414] hover:bg-[#0f0f0f]"
+                  className="flex items-center justify-between gap-2 px-2.5 py-2 border-b border-[#141414] hover:bg-[#0f0f0f]"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span
@@ -349,6 +386,15 @@ export default function CalendarTab({ chain }: Props) {
                     >
                       {badge}
                     </span>
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        badge === "QOPEX"
+                          ? "bg-violet-400"
+                          : badge === "MOPEX"
+                            ? "bg-rose-400"
+                            : "bg-[#666]"
+                      }`}
+                    />
                     <span className="text-[#a3a3a3] truncate">
                       {fmtShort(d)}
                     </span>
@@ -379,7 +425,7 @@ export default function CalendarTab({ chain }: Props) {
                 macroUpcoming.map((e) => (
                   <div
                     key={`${e.date}-${e.tag}`}
-                    className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-[#111]"
+                    className="flex items-center gap-2 px-1.5 py-1.5 rounded hover:bg-[#111] border-b border-[#121212]"
                   >
                     <span
                       className="text-[7px] font-bold px-1 py-0.5 rounded border border-[#2a2a2a] shrink-0"
@@ -391,6 +437,12 @@ export default function CalendarTab({ chain }: Props) {
                       {e.date}
                     </span>
                     <span className="text-[#a3a3a3] truncate">{e.title}</span>
+                    <span className="ml-auto shrink-0 text-[8px] text-emerald-400/90 tabular-nums">
+                      {(() => {
+                        const d = daysUntilFromNow(e.date, now);
+                        return d == null ? "—" : `D-${d}`;
+                      })()}
+                    </span>
                   </div>
                 ))
               )}
@@ -452,6 +504,10 @@ export default function CalendarTab({ chain }: Props) {
                 {week.map((day, di) => {
                   if (day == null)
                     return <div key={di} className="h-6" />;
+                  const iso = `${calMonth.y}-${String(calMonth.m + 1).padStart(
+                    2,
+                    "0"
+                  )}-${String(day).padStart(2, "0")}`;
                   const isOpexFri = opexDaysInMonth.has(day);
                   const isThird = thirdFridaysInMonth.has(day);
                   const isToday =
@@ -471,7 +527,19 @@ export default function CalendarTab({ chain }: Props) {
                               : "border-transparent bg-[#0d0d0d] text-[#666]"
                       }`}
                     >
-                      {day}
+                      <div className="flex flex-col items-center justify-center leading-none">
+                        <span>{day}</span>
+                        <span className="mt-0.5 flex gap-0.5">
+                          {isThird ? (
+                            <span className="h-1 w-1 rounded-full bg-[#f5a623]" />
+                          ) : isOpexFri ? (
+                            <span className="h-1 w-1 rounded-full bg-[#b45309]" />
+                          ) : null}
+                          {macroDateSet.has(iso) ? (
+                            <span className="h-1 w-1 rounded-full bg-[#06b6d4]" />
+                          ) : null}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -490,13 +558,15 @@ export default function CalendarTab({ chain }: Props) {
       </div>
 
       {/* Bottom: Globe + World news */}
-      <div className="shrink-0 flex flex-col gap-2 max-h-[48vh] min-h-0 overflow-y-auto">
+      <div className="flex flex-col gap-2">
+        <GlobeRiskPreview />
+
         <div className="text-[9px] font-bold tracking-widest text-[#555] uppercase px-0.5">
           World news
         </div>
         <StatusBadge
-          status={resilientNews.status}
-          updatedAt={resilientNews.updatedAt}
+          status={newsStatus}
+          updatedAt={newsUpdatedAt}
           onRetry={() => void loadNews()}
         />
         <div className="flex flex-wrap gap-1 pb-1">
@@ -524,7 +594,7 @@ export default function CalendarTab({ chain }: Props) {
             </button>
           ))}
         </div>
-        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+        <div className="space-y-1.5 pr-1 max-h-[32vh] overflow-y-auto">
           {filteredHeadlines.length === 0 ? (
             <div className="text-[#525252] py-2">No headlines match filter.</div>
           ) : (
@@ -541,7 +611,7 @@ export default function CalendarTab({ chain }: Props) {
               return (
                 <div
                   key={h.id}
-                  className={`flex gap-2 pl-2 py-1.5 rounded-r border border-[#1a1a1a] border-l-2 bg-[#0a0a0a] ${border}`}
+                  className={`flex gap-2 pl-2 py-2 rounded-r border border-[#1a1a1a] border-l-2 bg-[#0a0a0a] ${border}`}
                 >
                   <div className="min-w-0 flex-1 space-y-0.5">
                     <div className="flex flex-wrap items-center gap-1">
@@ -572,7 +642,6 @@ export default function CalendarTab({ chain }: Props) {
           )}
         </div>
 
-        <GlobeRiskPreview />
       </div>
     </div>
   );

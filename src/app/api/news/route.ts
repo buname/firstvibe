@@ -58,6 +58,8 @@ export async function GET() {
 
   for (const rssUrl of RSS_URLS) {
     try {
+      const symbolTag =
+        rssUrl.match(/[?&]s=([A-Z]+)/i)?.[1]?.toUpperCase() ?? "GEN";
       const r = await fetch(rssUrl, {
         headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120" },
         cache: "no-store",
@@ -68,7 +70,7 @@ export async function GET() {
       for (let i = 0; i < items.length; i++) {
         const { title, link } = items[i];
         pushUnique({
-          id: `rss-${rssUrl.slice(-6)}-${i}`,
+          id: `rss-${symbolTag}-${i}`,
           title,
           source: "Yahoo Finance RSS",
           time: nowTime(),
