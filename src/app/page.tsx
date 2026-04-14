@@ -12,7 +12,8 @@ export default function Home() {
         </h1>
 
         <Link
-          href="/calendar"
+          href="/dashboard"
+          prefetch={false}
           className="welcome-cinematic-cta mt-10 inline-flex items-center justify-center rounded-md border border-white/20 bg-transparent px-8 py-3 text-xs font-light uppercase tracking-[0.2em] text-white transition-all hover:scale-[1.02] hover:bg-white hover:text-black"
         >
           Open Dashboard
