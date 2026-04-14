@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #050506;
+  --bg-secondary: #060607;
+  --bg-card: #0d0d0f;
+  --bg-elevated: #111113;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-accent: rgba(255, 255, 255, 0.1);
+  --text-primary: #e4e4e7;
+  --text-secondary: #71717a;
+  --text-muted: #52525b;
+  --accent-green: #16a34a;
+  --accent-red: #dc2626;
+  --accent-yellow: #ea580c;
+  --accent-blue: #2563eb;
+  --accent-cyan: #0e7490;
+  --accent-purple: #9333ea;
+  --accent-purple-dim: #7e22ce;
+}
+
+@theme inline {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-border-default: var(--border-color);
+  --color-border-accent: var(--border-accent);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-purple-dim: var(--accent-purple-dim);
+  --color-accent-green: var(--accent-green);
+  --color-accent-red: var(--accent-red);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-cyan: var(--accent-cyan);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #222222 transparent;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+.panel-sheen {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0)),
+    linear-gradient(120deg, rgba(37, 99, 235, 0.02), rgba(147, 51, 234, 0.014) 45%, rgba(0, 0, 0, 0) 80%);
+}
+
+::selection {
+  background: rgba(22, 163, 74, 0.2);
+  color: #fff;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 255, 136, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes news-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.animate-ticker {
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.animate-news-scroll {
+  animation: news-scroll 40s linear infinite;
+}
+
+.glow-green {
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.1);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #f0f0f0 0%, #00ff88 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.recharts-wrapper,
+.recharts-surface {
+  background: transparent !important;
+}
+
+.recharts-cartesian-grid-bg {
+  fill: transparent !important;
+}
+
+.recharts-legend-item-text {
+  color: #999999 !important;
+}
+
+.recharts-default-tooltip {
+  background: #111111 !important;
+  border: 1px solid #222222 !important;
+  border-radius: 4px !important;
+}
+
+.recharts-tooltip-label {
+  color: #f0f0f0 !important;
+}
+
+.recharts-tooltip-item {
+  color: #999999 !important;
+}
+
+svg.recharts-surface {
+  overflow: visible;
+}
+
+.recharts-wrapper svg {
+  background: transparent !important;
+}
+
+.js-plotly-plot .plotly .main-svg {
+  background: transparent !important;
+}
+
+/* ── Fullscreen / Focus Mode ──────────────────────────────────────────────── */
+body.fullscreen-lock {
+  overflow: hidden !important;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to { opacity: 1; backdrop-filter: blur(4px); }
+}
+
+@keyframes panel-scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fullscreen-overlay-enter {
+  animation: overlay-in 0.25s ease-out forwards;
+}
+
+.fullscreen-panel-enter {
+  animation: panel-scale-in 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}

@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+.env.local
+.env.*.local
+npm-debug.log*
+Dockerfile*
+docker-compose*
+README.md
+.DS_Store
+*.log
+coverage
+.vercel
+*.md
+DOCKER.md

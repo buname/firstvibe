@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": [
+    {
+      "event": "beforeShellExecution",
+      "command": "node .cursor/hooks/before-shell-guard.js",
+      "failClosed": false
+    }
+  ]
+}
