@@ -8,8 +8,6 @@ import {
   MARKET_OPEN_MIN,
   MARKET_CLOSE_HOUR,
   MARKET_CLOSE_MIN,
-  INDEX_OPTIONS_UNDERLYING,
-  isIndexSymbol,
 } from "@/lib/constants";
 import {
   OptionContract,
@@ -44,9 +42,9 @@ function sumNetGex(gex: GEXByStrike[]): number {
 
 export interface MarketData {
   symbol: TickerSymbol;
-  /** Spot aligned to option strikes (QQQ/SPY when viewing NDX/SPX). Used for GEX, heatmap, distances. */
+  /** Spot aligned to current dual-index options chain for analytics. */
   spotPrice: number;
-  /** Header/footer price: cash index when NDX/SPX, otherwise same as spotPrice. */
+  /** Header/footer display price from selected dual-index quote. */
   displaySpot: number;
   prevClose: number;
   change: number;
@@ -60,6 +58,14 @@ export interface MarketData {
   netFlow: number;
   totalNetGex: number;
   atmIvPct: number;
+  atmIvDecimal: number;
+  daysToExpiry: number;
+  expectedMove: number;
+  projectedHigh: number;
+  projectedLow: number;
+  estimatedLevels: boolean;
+  optionsDataSource: "INDEX_OPTIONS" | "ETF_PROXY" | "MOCK";
+  optionsSourceNote: string | null;
   /** CBOE VIX index (Yahoo ^VIX) when live quote succeeds; null if unavailable. */
   vix: number | null;
   vixChangePct: number | null;
@@ -96,6 +102,61 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function nextMonthlyDte(expiries: string[] | undefined): number {
+  if (!expiries || expiries.length === 0) return 30;
+  const now = new Date();
+  const dayMs = 86_400_000;
+  for (const iso of expiries) {
+    const d = new Date(`${iso}T12:00:00Z`);
+    if (Number.isNaN(d.getTime())) continue;
+    const day = d.getUTCDay();
+    const date = d.getUTCDate();
+    const isMonthly = day === 5 && date >= 15 && date <= 21;
+    if (!isMonthly) continue;
+    const dte = Math.ceil((d.getTime() - now.getTime()) / dayMs);
+    if (dte > 0) return dte;
+  }
+  return 30;
+}
+
+function computeExpectedMove(
+  spot: number,
+  atmIvPct: number,
+  daysToExpiry: number
+): { expectedMove: number; projectedHigh: number; projectedLow: number; atmIvDecimal: number } {
+  const atmIvDecimal = Math.max(0, atmIvPct / 100);
+  const dte = Math.max(1, daysToExpiry);
+  let expectedMove = spot * atmIvDecimal * Math.sqrt(dte / 365);
+  const maxMove = spot * 0.05;
+  if (atmIvPct <= 40 && expectedMove > maxMove) {
+    expectedMove = maxMove;
+  }
+  return {
+    expectedMove,
+    projectedHigh: spot + expectedMove,
+    projectedLow: spot - expectedMove,
+    atmIvDecimal,
+  };
+}
+
+function scaleChainToSpot(
+  chain: OptionContract[],
+  sourceSpot: number,
+  targetSpot: number
+): OptionContract[] {
+  if (!sourceSpot || !targetSpot) return chain;
+  const ratio = targetSpot / sourceSpot;
+  if (!Number.isFinite(ratio) || ratio <= 0) return chain;
+  if (Math.abs(ratio - 1) < 0.02) return chain;
+  return chain.map((c) => ({
+    ...c,
+    strike: c.strike * ratio,
+    bid: c.bid * ratio,
+    ask: c.ask * ratio,
+    lastPrice: c.lastPrice * ratio,
+  }));
+}
+
 export function useMarketData(
   symbol: TickerSymbol,
   refreshMs: number = DEFAULT_REFRESH_MS
@@ -107,30 +168,37 @@ export function useMarketData(
   const lastGoodRef = useRef<MarketData | null>(null);
 
   const fallbackToMock = useCallback(() => {
-    const proxy =
-      (INDEX_OPTIONS_UNDERLYING[symbol] as string | undefined) ?? symbol;
-    const spotPrice = getSpotPrice(proxy);
-    const displaySpot = isIndexSymbol(symbol)
-      ? getSpotPrice(symbol)
-      : spotPrice;
+    const displaySpot = getSpotPrice(symbol);
     if (prevCloseRef.current === 0) {
       prevCloseRef.current = displaySpot * (1 - (Math.random() - 0.5) * 0.01);
     }
 
-    const chain = generateOptionsChain(proxy, spotPrice);
+    const chain = generateOptionsChain(symbol, displaySpot);
     const expiries = [...new Set(chain.map((c) => c.expiry))].sort();
 
     const filteredChain = selectedExpiry
       ? chain.filter((c) => c.expiry === selectedExpiry)
       : chain;
 
-    const gexByStrike = computeGEXByStrike(filteredChain, spotPrice);
-    const keyLevels = computeKeyLevels(gexByStrike, spotPrice);
-    const heatmap = computeHeatmap(chain, spotPrice);
+    const gexByStrike = computeGEXByStrike(filteredChain, displaySpot);
+    const rawLevels = computeKeyLevels(gexByStrike, displaySpot);
+    const estimatedLevels = gexByStrike.length === 0;
+    const keyLevels = estimatedLevels
+      ? {
+          ...rawLevels,
+          callWall: displaySpot * 1.008,
+          putWall: displaySpot * 0.992,
+          maxPain: displaySpot,
+        }
+      : rawLevels;
+    const heatmap = computeHeatmap(chain, displaySpot);
     const unusualFlow = detectUnusualFlow(chain);
     const { ratio: flowRatio, netFlow } = computeFlowRatio(chain);
     const totalNetGex = sumNetGex(gexByStrike);
-    const atmIvPct = computeAtmIvPct(chain, spotPrice);
+    const atmIvPct = computeAtmIvPct(chain, displaySpot);
+    const daysToExpiry = nextMonthlyDte(expiries);
+    const { expectedMove, projectedHigh, projectedLow, atmIvDecimal } =
+      computeExpectedMove(displaySpot, atmIvPct, daysToExpiry);
     const news = generateMarketNews();
     const vixDemo =
       18.8 + (symbol.codePointAt(0) ?? 65) * 0.012 + (symbol.length % 7) * 0.08;
@@ -143,7 +211,7 @@ export function useMarketData(
 
     setData({
       symbol,
-      spotPrice,
+      spotPrice: displaySpot,
       displaySpot,
       prevClose: prevCloseRef.current,
       change,
@@ -157,6 +225,14 @@ export function useMarketData(
       netFlow,
       totalNetGex,
       atmIvPct,
+      atmIvDecimal,
+      daysToExpiry,
+      expectedMove,
+      projectedHigh,
+      projectedLow,
+      estimatedLevels,
+      optionsDataSource: "MOCK",
+      optionsSourceNote: "Synthetic fallback chain in use.",
       vix: vixDemo,
       vixChangePct: vixChangeDemo,
       expiries,
@@ -190,28 +266,45 @@ export function useMarketData(
           throw new Error("Both APIs failed");
         }
 
-        const indexView = isIndexSymbol(symbol);
         const quoteSpot = Number(quote.spotPrice) || 0;
         const underlyingSpot = Number(options.spotPrice) || 0;
-        const chain: OptionContract[] = options.chain || [];
+        const chainRaw: OptionContract[] = options.chain || [];
         const expiries: string[] = options.expirations || [];
+        const optionsDataSource: "INDEX_OPTIONS" | "ETF_PROXY" =
+          options.dataSource === "INDEX_OPTIONS" ? "INDEX_OPTIONS" : "ETF_PROXY";
+        const optionsSourceNote =
+          typeof options.note === "string" ? options.note : null;
 
-        const spotPrice = underlyingSpot || (!indexView ? quoteSpot : 0);
+        const analyticsSpot = quoteSpot || underlyingSpot;
+        const chain = scaleChainToSpot(chainRaw, underlyingSpot, analyticsSpot);
+        const spotPrice = analyticsSpot;
         if (!spotPrice || chain.length === 0) throw new Error("Insufficient data");
 
-        const displaySpot = indexView && quoteSpot > 0 ? quoteSpot : spotPrice;
+        const displaySpot = analyticsSpot;
 
         const filteredChain = selectedExpiry
           ? chain.filter((c) => c.expiry === selectedExpiry)
           : chain;
 
         const gexByStrike = computeGEXByStrike(filteredChain, spotPrice);
-        const keyLevels = computeKeyLevels(gexByStrike, spotPrice);
+        const rawLevels = computeKeyLevels(gexByStrike, spotPrice);
+        const estimatedLevels = gexByStrike.length === 0;
+        const keyLevels = estimatedLevels
+          ? {
+              ...rawLevels,
+              callWall: spotPrice * 1.008,
+              putWall: spotPrice * 0.992,
+              maxPain: spotPrice,
+            }
+          : rawLevels;
         const heatmap = computeHeatmap(chain, spotPrice);
         const unusualFlow = detectUnusualFlow(chain);
         const { ratio: flowRatio, netFlow } = computeFlowRatio(chain);
         const totalNetGex = sumNetGex(gexByStrike);
         const atmIvPct = computeAtmIvPct(chain, spotPrice);
+        const daysToExpiry = nextMonthlyDte(expiries);
+        const { expectedMove, projectedHigh, projectedLow, atmIvDecimal } =
+          computeExpectedMove(spotPrice, atmIvPct, daysToExpiry);
 
         const vixOk =
           vixQuote &&
@@ -242,6 +335,14 @@ export function useMarketData(
           netFlow,
           totalNetGex,
           atmIvPct,
+          atmIvDecimal,
+          daysToExpiry,
+          expectedMove,
+          projectedHigh,
+          projectedLow,
+          estimatedLevels,
+          optionsDataSource,
+          optionsSourceNote,
           vix,
           vixChangePct,
           expiries,

@@ -13,6 +13,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import type { FlowEntry } from "@/lib/gex-engine";
+import { formatCompactNumber, formatCompactSigned } from "@/lib/number-format";
 
 interface Props {
   flow: FlowEntry[];
@@ -45,15 +46,11 @@ interface EnrichedFlow extends FlowEntry {
 const FLOW_PREFS_KEY = "bex-flow-prefs";
 
 function formatCompact(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return `${Math.round(value)}`;
+  return formatCompactNumber(value);
 }
 
 function formatPremium(value: number): string {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-  return `$${Math.round(value)}`;
+  return `$${formatCompactNumber(value)}`;
 }
 
 function bucketExpiry(iso: string): ExpiryBucket {
@@ -263,6 +260,25 @@ export default function FlowTab({ flow, spotPrice }: Props) {
     second: "2-digit",
     timeZone: "America/New_York",
   });
+
+  if (flow.length === 0) {
+    return (
+      <div className="h-full flex flex-col p-3">
+        <div className="mb-3 text-sm font-mono font-bold tracking-wider text-[#e4e4e7]">
+          UNUSUAL FLOW
+        </div>
+        <div className="rounded border border-white/[0.06] bg-[#0d0d0f] p-3 text-[10px] font-mono text-[#666]">
+          Processing SPX/NDX flow feed...
+        </div>
+        <div className="mt-3 flex-1 rounded border border-white/[0.06] bg-[#0d0d0f] p-3">
+          <div className="h-4 w-48 animate-pulse rounded bg-white/10" />
+          <div className="mt-2 h-3 w-full animate-pulse rounded bg-white/5" />
+          <div className="mt-1 h-3 w-full animate-pulse rounded bg-white/5" />
+          <div className="mt-1 h-3 w-2/3 animate-pulse rounded bg-white/5" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col p-3">
@@ -517,7 +533,7 @@ export default function FlowTab({ flow, spotPrice }: Props) {
                     f.ratio >= 10 ? "text-[#ea580c]" : "text-[#d4d4d8]"
                   }`}
                 >
-                  {f.ratio.toFixed(2)}x
+                  {formatCompactSigned(f.ratio)}x
                 </td>
                 <td className="px-2 py-3 text-[#a1a1aa] text-right">
                   ${f.mid.toFixed(2)}

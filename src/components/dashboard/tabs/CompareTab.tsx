@@ -19,7 +19,6 @@ import {
   Cell,
 } from "recharts";
 import type { TickerSymbol } from "@/lib/constants";
-import { TICKERS } from "@/lib/constants";
 import {
   computeGEXByStrike,
   computeKeyLevels,
@@ -28,22 +27,12 @@ import {
 } from "@/lib/gex-engine";
 import { isIndexSymbol } from "@/lib/constants";
 
-const COMPARE_POOL: TickerSymbol[] = [
-  "SPY",
-  "QQQ",
-  "IWM",
-  "AAPL",
-];
-
-const ALLOWED_TICKERS = TICKERS.map((t) => t.symbol);
-
 function orderedSymbols(
-  primary: TickerSymbol,
-  extras: TickerSymbol[] = []
+  primary: TickerSymbol
 ): TickerSymbol[] {
-  const rest = COMPARE_POOL.filter((s) => s !== primary);
-  const extra = extras.filter((s) => s !== primary && !rest.includes(s));
-  return [primary, ...rest, ...extra].slice(0, 8) as TickerSymbol[];
+  const normalized: TickerSymbol = primary === "NDX" ? "NDX" : "SPX";
+  const other: TickerSymbol = normalized === "SPX" ? "NDX" : "SPX";
+  return [normalized, other];
 }
 
 function computeAtmIvPct(chain: OptionContract[], spot: number): number {
@@ -204,14 +193,9 @@ export default function CompareTab({
   primarySymbol,
   onOpenInTerminal,
 }: Props) {
-  const [extraSymbols, setExtraSymbols] = useState<TickerSymbol[]>([]);
-  const [addTickerInput, setAddTickerInput] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshMs, setLastRefreshMs] = useState<number | null>(null);
-  const symbols = useMemo(
-    () => orderedSymbols(primarySymbol, extraSymbols),
-    [primarySymbol, extraSymbols]
-  );
+  const symbols = useMemo(() => orderedSymbols(primarySymbol), [primarySymbol]);
 
   const lastGoodRef = useRef<Partial<Record<TickerSymbol, SymbolData>>>({});
 
@@ -315,10 +299,10 @@ export default function CompareTab({
       <div className="flex items-center justify-between gap-2 mb-3 shrink-0">
         <div>
           <h2 className="text-sm font-mono font-bold tracking-wider text-[#f0f0f0]">
-            TICKER COMPARISON
+            DUAL INDEX COMPARISON
           </h2>
           <p className="text-[10px] text-[#525252] font-mono mt-0.5">
-            Live Yahoo chain · same GEX engine as Exposures
+            SPX vs NDX side-by-side metrics and GEX profile
           </p>
           <p className="text-[9px] text-[#444] font-mono mt-0.5">
             {refreshing ? "Refreshing…" : "Refresh ready"}
@@ -328,32 +312,6 @@ export default function CompareTab({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <input
-            list="compare-tickers"
-            value={addTickerInput}
-            onChange={(e) => setAddTickerInput(e.target.value.toUpperCase())}
-            placeholder="Add ticker"
-            className="w-24 rounded border border-[#333] bg-[#0a0a0a] px-2 py-1 text-[10px] font-mono text-[#ccc]"
-          />
-          <datalist id="compare-tickers">
-            {ALLOWED_TICKERS.map((s) => (
-              <option key={s} value={s} />
-            ))}
-          </datalist>
-          <button
-            type="button"
-            onClick={() => {
-              const s = addTickerInput.trim().toUpperCase() as TickerSymbol;
-              if (!ALLOWED_TICKERS.includes(s)) return;
-              if (COMPARE_POOL.includes(s)) return;
-              if (extraSymbols.includes(s)) return;
-              setExtraSymbols((prev) => [...prev, s].slice(0, 4));
-              setAddTickerInput("");
-            }}
-            className="text-[10px] font-mono px-2 py-1 rounded border border-[#333] text-[#a3a3a3] hover:bg-[#161616] hover:text-white"
-          >
-            Add
-          </button>
           <button
             type="button"
             onClick={refresh}
@@ -364,25 +322,8 @@ export default function CompareTab({
           </button>
         </div>
       </div>
-      {extraSymbols.length > 0 && (
-        <div className="mb-2 flex flex-wrap items-center gap-1">
-          <span className="text-[9px] font-mono text-[#555]">Extra:</span>
-          {extraSymbols.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() =>
-                setExtraSymbols((prev) => prev.filter((x) => x !== s))
-              }
-              className="rounded border border-[#2a2a2a] px-1.5 py-0.5 text-[9px] font-mono text-[#888] hover:text-white"
-            >
-              {s} ×
-            </button>
-          ))}
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 flex-1 min-h-[320px]">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 flex-1 min-h-[320px]">
         {cards.map((c) => (
           <div
             key={c.symbol}

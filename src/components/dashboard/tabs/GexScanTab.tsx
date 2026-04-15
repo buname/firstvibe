@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TICKERS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useResilientFetch } from "@/hooks/useResilientFetch";
 import StatusBadge from "@/components/dashboard/StatusBadge";
@@ -29,7 +28,7 @@ interface ScanRow {
   nearGammaFlip: boolean;
 }
 
-const DEFAULT_TICKERS = TICKERS.map((t) => t.symbol).join(", ");
+const INDEX_TICKERS = ["SPX", "NDX"] as const;
 const SNAPSHOT_KEY = "bex-gexscan-last-good";
 
 type ScanPayload = {
@@ -39,7 +38,6 @@ type ScanPayload = {
 };
 
 export default function GexScanTab() {
-  const [tickers, setTickers] = useState(DEFAULT_TICKERS);
   const [days, setDays] = useState(60);
   const [rangePct, setRangePct] = useState(15);
   const [loading, setLoading] = useState(false);
@@ -49,12 +47,8 @@ export default function GexScanTab() {
     []
   );
   const requestTickers = useMemo(
-    () =>
-      tickers
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-    [tickers]
+    () => [...INDEX_TICKERS],
+    []
   );
 
   const resilient = useResilientFetch<ScanPayload>({
@@ -112,7 +106,7 @@ export default function GexScanTab() {
           GEX market scan
         </h1>
         <p className="text-[#737373] mt-1">
-          Multi-ticker gamma scan + SqueezeMetrics DIX (ported from legacy
+          Dual-index gamma scan + SqueezeMetrics DIX (ported from legacy
           Streamlit flow). Uses Yahoo chains and the same GEX engine as
           Exposures.
         </p>
@@ -126,15 +120,19 @@ export default function GexScanTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 border border-[#1f1f1f] rounded-md p-3 bg-[#0a0a0a]">
-        <label className="md:col-span-2 flex flex-col gap-1">
-          <span className="text-[#737373]">Tickers (comma-separated)</span>
-          <textarea
-            value={tickers}
-            onChange={(e) => setTickers(e.target.value)}
-            rows={2}
-            className="bg-black border border-[#262626] rounded px-2 py-1.5 text-[11px] resize-y min-h-[52px]"
-          />
-        </label>
+        <div className="md:col-span-2 flex flex-col gap-2">
+          <span className="text-[#737373]">Active index set</span>
+          <div className="flex items-center gap-2">
+            {INDEX_TICKERS.map((ticker) => (
+              <span
+                key={ticker}
+                className="rounded border border-white/[0.08] bg-[#111] px-2.5 py-1 text-[10px] text-white"
+              >
+                {ticker}
+              </span>
+            ))}
+          </div>
+        </div>
         <div className="flex flex-col gap-2">
           <label className="flex flex-col gap-1">
             <span className="text-[#737373]">Max DTE (days)</span>
@@ -174,11 +172,11 @@ export default function GexScanTab() {
       {squeeze && (
         <div className="border border-[#1f1f1f] rounded-md p-3 bg-[#0a0a0a]">
           <h2 className="text-xs font-semibold text-white mb-2">
-            S&P 500 context (SqueezeMetrics)
+            Index context (SqueezeMetrics)
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <div>
-              <div className="text-[#737373]">SPX GEX (B)</div>
+              <div className="text-[#737373]">Index GEX (B)</div>
               <div
                 className={
                   squeeze.gexBillions >= 0 ? "text-emerald-400" : "text-red-400"
@@ -224,7 +222,7 @@ export default function GexScanTab() {
       {rows.length > 0 && (
         <div className="border border-[#1f1f1f] rounded-md overflow-hidden">
           <div className="px-3 py-2 bg-[#111] text-xs text-white font-semibold">
-            Cross-ticker summary
+            SPX/NDX summary
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-[10px]">

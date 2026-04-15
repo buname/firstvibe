@@ -12,14 +12,17 @@ const ChartStudio = dynamic(
 interface Props {
   keyLevels: KeyLevels;
   atmIvPct: number;
+  atmIvDecimal: number;
+  daysToExpiry: number;
+  expectedMove: number;
+  projectedHigh: number;
+  projectedLow: number;
+  estimatedLevels: boolean;
+  optionsDataSource: "INDEX_OPTIONS" | "ETF_PROXY" | "MOCK";
+  optionsSourceNote: string | null;
   symbol: string;
   spotPrice: number;
   onSymbolChange?: (next: TickerSymbol) => void;
-}
-
-function expectedMove(spot: number, atmIvPct: number) {
-  const move = (atmIvPct / 100) * Math.sqrt(5 / 252) * spot;
-  return { high: spot + move, low: spot - move };
 }
 
 function pctDiff(val: number, spot: number) {
@@ -30,12 +33,19 @@ function pctDiff(val: number, spot: number) {
 export default function LevelsTab({
   keyLevels,
   atmIvPct,
+  atmIvDecimal,
+  daysToExpiry,
+  expectedMove,
+  projectedHigh,
+  projectedLow,
+  estimatedLevels,
+  optionsDataSource,
+  optionsSourceNote,
   symbol,
   spotPrice,
   onSymbolChange,
 }: Props) {
   const spot = keyLevels.spotPrice;
-  const { high: expHigh, low: expLow } = expectedMove(spot, atmIvPct);
 
   const cards = [
     {
@@ -75,17 +85,17 @@ export default function LevelsTab({
     },
     {
       label: "EXPECTED HIGH",
-      value: expHigh,
+      value: projectedHigh,
       color: "#00e87a",
-      sub: "Spot + 1-wk σ",
-      dist: pctDiff(expHigh, spot),
+      sub: "Spot + σ(dte)",
+      dist: pctDiff(projectedHigh, spot),
     },
     {
       label: "EXPECTED LOW",
-      value: expLow,
+      value: projectedLow,
       color: "#ff4455",
-      sub: "Spot − 1-wk σ",
-      dist: pctDiff(expLow, spot),
+      sub: "Spot − σ(dte)",
+      dist: pctDiff(projectedLow, spot),
     },
     {
       label: "ATM IV",
@@ -107,6 +117,17 @@ export default function LevelsTab({
         <p className="text-[10px] font-mono text-[#444] mt-0.5 tracking-wider">
           {symbol} · key gamma levels &amp; expected move
         </p>
+        <p className="text-[9px] font-mono text-[#666] mt-1 tracking-wide">
+          Spot {spot.toFixed(2)} · IV {(atmIvDecimal * 100).toFixed(1)}% · DTE{" "}
+          {daysToExpiry} · Move ±{expectedMove.toFixed(2)}
+          {estimatedLevels ? " · ESTIMATED LEVELS" : " · OI-DERIVED LEVELS"}
+          {optionsDataSource === "ETF_PROXY" ? " · ETF PROXY" : ""}
+        </p>
+        {optionsDataSource === "ETF_PROXY" && optionsSourceNote ? (
+          <p className="text-[9px] font-mono text-amber-400/80 mt-1 tracking-wide">
+            {optionsSourceNote}
+          </p>
+        ) : null}
       </div>
 
       {/* 4×2 card grid */}
@@ -162,7 +183,7 @@ export default function LevelsTab({
 
       {/* Note */}
       <div className="text-[9px] font-mono text-[#333] shrink-0">
-        NOTE — Levels from current OI snapshot. Not real-time signals.
+        NOTE — Expected Move = Spot × IV × sqrt(DTE/365), clamped to 5% when IV ≤ 40%.
       </div>
     </div>
   );

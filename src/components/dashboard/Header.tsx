@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ChevronDown, RefreshCw, Clock, Unlink } from "lucide-react";
-import { TICKERS, TickerSymbol } from "@/lib/constants";
+import { TickerSymbol } from "@/lib/constants";
 import TopLeftLogo from "@/components/ui/TopLeftLogo";
 
 interface NewsItem {
@@ -35,6 +35,26 @@ interface Props {
   refreshMs: number;
 }
 
+interface MarketQuote {
+  symbol: "NDX" | "SPX";
+  sourceSymbol: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  formattedPrice: string;
+  formattedChange: string;
+  formattedChangePercent: string;
+  lastUpdated: string;
+  offline?: boolean;
+  fallback?: boolean;
+  error?: string;
+}
+
+const HEADER_TICKERS: Array<{ symbol: "NDX" | "SPX"; name: string }> = [
+  { symbol: "NDX", name: "Nasdaq 100" },
+  { symbol: "SPX", name: "S&P 500" },
+];
+
 export default function Header({
   symbol,
   onSymbolChange,
@@ -62,6 +82,62 @@ export default function Header({
   const [etDate, setEtDate] = useState("");
   /** Wall clock for age display (updated every second, no Date.now in render). */
   const [clockMs, setClockMs] = useState(() => Date.now());
+  const [marketQuote, setMarketQuote] = useState<MarketQuote | null>(null);
+  const [syncState, setSyncState] = useState<"idle" | "fetching" | "live">(
+    "idle"
+  );
+  const retryTimeoutRef = useRef<number | null>(null);
+
+  const headerSymbol = symbol === "NDX" ? "NDX" : "SPX";
+
+  const fetchMarketQuote = useCallback(async (): Promise<boolean> => {
+    setSyncState((current) => (current === "live" ? "live" : "fetching"));
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 5_000);
+    const fallbackQuote: MarketQuote = {
+      symbol: headerSymbol,
+      sourceSymbol: headerSymbol,
+      price: spotPrice > 0 ? spotPrice : 0,
+      change,
+      changePercent: changePct,
+      formattedPrice: new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(spotPrice > 0 ? spotPrice : 0),
+      formattedChange: `${change >= 0 ? "+" : ""}${change.toFixed(2)}`,
+      formattedChangePercent: `${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%`,
+      lastUpdated: new Date().toISOString(),
+      offline: true,
+      fallback: true,
+      error: "Using fallback snapshot",
+    };
+    try {
+      const response = await fetch(`/api/market-data?symbol=${headerSymbol}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        setMarketQuote((current) => current ?? fallbackQuote);
+        setSyncState("live");
+        return false;
+      }
+      const payload = (await response.json()) as MarketQuote;
+      if (!payload || typeof payload.price !== "number") {
+        setMarketQuote((current) => current ?? fallbackQuote);
+        setSyncState("live");
+        return false;
+      }
+      setMarketQuote(payload);
+      setSyncState("live");
+      return true;
+    } catch {
+      setMarketQuote((current) => current ?? fallbackQuote);
+      setSyncState("live");
+      return false;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }, [headerSymbol, spotPrice, change, changePct]);
 
   useEffect(() => {
     const tick = () => {
@@ -98,14 +174,71 @@ export default function Header({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const isPositive = change >= 0;
+  useEffect(() => {
+    let mounted = true;
+    let inFlight = false;
+
+    const clearRetry = () => {
+      if (retryTimeoutRef.current !== null) {
+        window.clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
+
+    const runFetch = async () => {
+      if (!mounted || inFlight) return;
+      inFlight = true;
+      const connected = await fetchMarketQuote();
+      inFlight = false;
+      if (!mounted) return;
+      if (connected) {
+        clearRetry();
+      } else if (retryTimeoutRef.current === null) {
+        retryTimeoutRef.current = window.setTimeout(() => {
+          retryTimeoutRef.current = null;
+          void runFetch();
+        }, 3_000);
+      }
+    };
+
+    void runFetch();
+    const id = window.setInterval(() => {
+      void runFetch();
+    }, 10_000);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(id);
+      clearRetry();
+    };
+  }, [fetchMarketQuote]);
+
+  const effectiveSpot = marketQuote?.price ?? spotPrice;
+  const effectiveChange = marketQuote?.change ?? change;
+  const effectiveChangePct = marketQuote?.changePercent ?? changePct;
+  const formattedSpot =
+    marketQuote?.formattedPrice ??
+    new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(effectiveSpot);
+  const formattedChange =
+    marketQuote?.formattedChange ??
+    `${effectiveChange >= 0 ? "+" : ""}${effectiveChange.toFixed(2)}`;
+  const formattedChangePct =
+    marketQuote?.formattedChangePercent ??
+    `${effectiveChangePct >= 0 ? "+" : ""}${effectiveChangePct.toFixed(2)}%`;
+  const quoteLastUpdate = marketQuote?.lastUpdated
+    ? new Date(marketQuote.lastUpdated)
+    : lastUpdate;
+  const isPositive = effectiveChange >= 0;
   const displayExpiries = expiries.slice(0, 4);
 
   const ageSec =
-    lastUpdate != null
+    quoteLastUpdate != null
       ? Math.max(
           0,
-          Math.floor((clockMs - lastUpdate.getTime()) / 1000)
+          Math.floor((clockMs - quoteLastUpdate.getTime()) / 1000)
         )
       : null;
 
@@ -124,6 +257,13 @@ export default function Header({
     window.location.href = "/";
   };
 
+  const statusLabel =
+    syncState === "idle"
+      ? "Idle"
+      : syncState === "fetching"
+        ? "Fetching"
+        : "Live";
+
   return (
     <div className="shrink-0">
       <header className="panel-sheen flex h-12 items-center gap-2 border-b border-white/[0.04] bg-[#050506] px-2 sm:gap-3 sm:px-3">
@@ -137,28 +277,28 @@ export default function Header({
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0d0d0f] border border-white/[0.06] hover:border-white/[0.1] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.03)] transition-all"
           >
             <span className="font-mono font-bold text-sm text-[#e4e4e7]">
-              {symbol}
+              {headerSymbol}
             </span>
             <ChevronDown className="w-3 h-3 text-[#666]" />
           </button>
 
           {open && (
-            <div className="absolute top-full left-0 mt-1 w-56 bg-[#0d0d0f] border border-white/[0.06] rounded shadow-2xl z-50 overflow-hidden max-h-80 overflow-y-auto">
-              {TICKERS.map((t) => (
+            <div className="absolute top-full left-0 mt-1 w-44 overflow-hidden rounded border border-white/[0.08] bg-[#0d0d0f] shadow-2xl z-50">
+              {HEADER_TICKERS.map((t) => (
                 <button
                   key={t.symbol}
                   onClick={() => {
-                    onSymbolChange(t.symbol as TickerSymbol);
+                    onSymbolChange(t.symbol);
                     setOpen(false);
                   }}
                   className={`w-full px-3 py-2 flex items-center justify-between text-xs hover:bg-[#161616] transition-colors ${
-                    t.symbol === symbol
+                    t.symbol === headerSymbol
                       ? "bg-[#151518] text-[#16a34a]"
-                      : "text-[#71717a]"
+                      : "text-[#a1a1aa]"
                   }`}
                 >
                   <span className="font-mono font-medium">{t.symbol}</span>
-                  <span className="text-[10px] text-[#666]">{t.name}</span>
+                  <span className="text-[10px] text-[#6b7280]">{t.name}</span>
                 </button>
               ))}
             </div>
@@ -167,22 +307,20 @@ export default function Header({
 
         <div className="flex items-center gap-2">
           <span className="font-mono text-base font-bold text-[#e4e4e7] tabular-nums tracking-tight">
-            {spotPrice > 0
-              ? spotPrice.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })
-              : "—"}
+            {effectiveSpot > 0 ? formattedSpot : "—"}
           </span>
           <span
             className={`font-mono text-xs font-medium tabular-nums ${
               isPositive ? "text-[#16a34a]" : "text-[#dc2626]"
             }`}
           >
-            {isPositive ? "+" : ""}
-            {change.toFixed(2)} ({isPositive ? "+" : ""}
-            {changePct.toFixed(2)}%)
+            {formattedChange} ({formattedChangePct})
           </span>
+          {syncState !== "live" ? (
+            <span className="px-1.5 py-0.5 text-[10px] font-mono font-semibold text-white">
+              {statusLabel}
+            </span>
+          ) : null}
         </div>
 
         {displayExpiries.length > 0 && (
@@ -272,6 +410,14 @@ export default function Header({
 
           <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-wide">
             <span
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                syncState === "live" ? "bg-emerald-400" : "bg-white/70"
+              } ${syncState === "fetching" ? "animate-pulse" : ""}`}
+            />
+            <span className="hidden text-white sm:inline">
+              {statusLabel}
+            </span>
+            <span
               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                 live
                   ? isMarketOpen
@@ -280,14 +426,8 @@ export default function Header({
                   : "bg-[#f59e0b]"
               }`}
             />
-            <span
-              className={
-                live
-                  ? "text-[#a3a3a3]"
-                  : "text-[#ca8a04]"
-              }
-            >
-              {live ? "LIVE" : "DEMO"}
+            <span className="text-white">
+              LIVE
               {ageSec != null ? (
                 <span className="text-[#737373]"> · {ageSec}s</span>
               ) : null}

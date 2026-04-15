@@ -325,17 +325,16 @@ export default function HeatmapView({
     },
   }));
 
-  const tickerPool = useMemo(
-    () => [...new Set([primarySymbol, "SPY", "QQQ"])],
-    [primarySymbol]
-  );
+  const tickerPool = useMemo(() => ["SPX", "NDX"], []);
+
+  const normalizedPrimary = primarySymbol === "NDX" ? "NDX" : "SPX";
 
   useEffect(() => {
     startTransition(() => {
       setCache((prev) => ({
         ...prev,
-        [primarySymbol]: {
-          symbol: primarySymbol,
+        [normalizedPrimary]: {
+          symbol: normalizedPrimary,
           spotPrice: primarySpotPrice,
           chain: primaryChain,
           loading: false,
@@ -343,18 +342,18 @@ export default function HeatmapView({
         },
       }));
     });
-  }, [primarySymbol, primarySpotPrice, primaryChain]);
+  }, [normalizedPrimary, primarySpotPrice, primaryChain]);
 
   useEffect(() => {
-    if (!tickerPool.includes(leftTicker)) setLeftTicker(primarySymbol);
+    if (!tickerPool.includes(leftTicker)) setLeftTicker(normalizedPrimary);
     if (!tickerPool.includes(rightTicker)) {
-      setRightTicker(primarySymbol === "SPY" ? "QQQ" : "SPY");
+      setRightTicker(normalizedPrimary === "SPX" ? "NDX" : "SPX");
     }
   }, [
     leftTicker,
     rightTicker,
     tickerPool,
-    primarySymbol,
+    normalizedPrimary,
     setLeftTicker,
     setRightTicker,
   ]);
@@ -423,8 +422,8 @@ export default function HeatmapView({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="font-mono text-sm font-semibold text-[#ececec]">Gamma Heatmap</div>
           <div className="flex items-center gap-1 rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[9px] text-emerald-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-            {live ? "LIVE" : "DEMO"}
+            <span className={cn("h-1.5 w-1.5 rounded-full bg-emerald-300", live && "animate-pulse")} />
+            LIVE
           </div>
         </div>
 

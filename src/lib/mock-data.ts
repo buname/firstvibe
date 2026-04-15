@@ -47,20 +47,8 @@ function erf(x: number): number {
 }
 
 const SPOT_PRICES: Record<string, number> = {
-  NDX: 18250,
+  NDX: 25854,
   SPX: 5320,
-  QQQ: 445,
-  SPY: 532,
-  AAPL: 192,
-  NVDA: 875,
-  TSLA: 178,
-  AMZN: 186,
-  MSFT: 420,
-  META: 505,
-  GOOG: 176,
-  GOOGL: 176,
-  AMD: 158,
-  IWM: 198,
 };
 
 export function getSpotPrice(symbol: string): number {

@@ -13,6 +13,7 @@ import {
 import type { GEXByStrike, KeyLevels, OptionContract } from "@/lib/gex-engine";
 import { computeVannaCharm } from "@/lib/vanna-charm";
 import ExpandablePanel from "@/components/dashboard/ExpandablePanel";
+import { formatCompactSigned } from "@/lib/number-format";
 
 interface Props {
   gexByStrike: GEXByStrike[];
@@ -472,8 +473,8 @@ export default function ExposuresTab({
             <WallRow
               key={`cg-${r.strike}`}
               label="Call Wall"
-              badge={arrows(r.callGEX, maxCallGEX, "▲", "▼") + " " + (r.callGEX >= 0 ? "+" : "") + (r.callGEX / 1e6).toFixed(1) + "M"}
-              magnitude={`+${(r.callGEX / 1e6).toFixed(1)}M`}
+              badge={`${arrows(r.callGEX, maxCallGEX, "▲", "▼")} ${formatCompactSigned(r.callGEX)}`}
+              magnitude={formatCompactSigned(r.callGEX)}
               strike={r.strike}
               color="#00ff88"
             />
@@ -482,8 +483,8 @@ export default function ExposuresTab({
             <WallRow
               key={`pg-${r.strike}`}
               label="Put Wall"
-              badge={arrows(r.putGEX, maxPutGEX, "▲", "▼") + " " + (r.putGEX / 1e6).toFixed(1) + "M"}
-              magnitude={`${(r.putGEX / 1e6).toFixed(1)}M`}
+              badge={`${arrows(r.putGEX, maxPutGEX, "▲", "▼")} ${formatCompactSigned(r.putGEX)}`}
+              magnitude={formatCompactSigned(r.putGEX)}
               strike={r.strike}
               color="#ff4444"
             />
@@ -495,8 +496,8 @@ export default function ExposuresTab({
             <WallRow
               key={`v-${r.strike}`}
               label={r.vanna >= 0 ? "Vanna Long" : "Vanna Short"}
-              badge={arrows(r.vanna, maxVanna, "▲▲▲", "▼▼▼").slice(0,3) + " " + (r.vanna >= 0 ? "+" : "") + r.vanna.toFixed(0)}
-              magnitude={`${r.vanna >= 0 ? "+" : ""}${r.vanna.toFixed(1)}`}
+              badge={`${arrows(r.vanna, maxVanna, "▲▲▲", "▼▼▼").slice(0, 3)} ${formatCompactSigned(r.vanna)}`}
+              magnitude={formatCompactSigned(r.vanna)}
               strike={r.strike}
               color={r.vanna >= 0 ? "#f97316" : "#818cf8"}
             />
@@ -508,8 +509,8 @@ export default function ExposuresTab({
             <WallRow
               key={`c-${r.strike}`}
               label={r.charm >= 0 ? "Charm Long" : "Charm Short"}
-              badge={arrows(r.charm, maxCharm, "▲▲▲", "▼▼▼").slice(0,3) + " " + (r.charm >= 0 ? "+" : "") + r.charm.toFixed(1)}
-              magnitude={`${r.charm >= 0 ? "+" : ""}${r.charm.toFixed(2)}`}
+              badge={`${arrows(r.charm, maxCharm, "▲▲▲", "▼▼▼").slice(0, 3)} ${formatCompactSigned(r.charm)}`}
+              magnitude={formatCompactSigned(r.charm)}
               strike={r.strike}
               color={r.charm >= 0 ? "#ec4899" : "#6366f1"}
             />

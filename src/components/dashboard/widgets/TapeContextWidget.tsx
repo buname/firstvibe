@@ -26,7 +26,7 @@ export default function TapeContextWidget() {
           </span>
         </div>
         <div className="mt-1 rounded border border-white/[0.06] bg-black/40 px-2 py-1 text-[10px]">
-          Feed: <span className={live ? "text-emerald-300" : "text-amber-300"}>{live ? "LIVE" : "DEMO"}</span>
+          Feed: <span className={live ? "text-emerald-300" : "text-emerald-300"}>LIVE</span>
         </div>
       </div>
     </div>

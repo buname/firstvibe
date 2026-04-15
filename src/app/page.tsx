@@ -6,7 +6,7 @@ export default function Home() {
     <main className="relative isolate min-h-screen w-full overflow-hidden bg-black text-white">
       <StarField />
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 text-center">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 pb-24 text-center sm:pb-28">
         <h1 className="welcome-cinematic-title text-5xl font-extralight uppercase tracking-[0.2em] text-[#ffffff] antialiased sm:text-6xl md:text-7xl">
           Welcome to BexData
         </h1>
@@ -18,6 +18,12 @@ export default function Home() {
         >
           Open Dashboard
         </Link>
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-5 z-20 px-4 sm:bottom-6">
+        <p className="mx-auto max-w-4xl text-center text-[10px] font-light uppercase tracking-[0.14em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] sm:text-[11px]">
+          <span className="font-semibold">Risk Warning:</span> Trading involves substantial risk of loss. This platform is for educational and informational use only and is not financial advice.
+        </p>
       </div>
     </main>
   );

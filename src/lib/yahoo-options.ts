@@ -3,18 +3,6 @@ import type { OptionContract } from "@/lib/gex-engine";
 export const YAHOO_OPTIONS_SYMBOL_MAP: Record<string, string> = {
   NDX: "QQQ",
   SPX: "SPY",
-  QQQ: "QQQ",
-  SPY: "SPY",
-  AAPL: "AAPL",
-  NVDA: "NVDA",
-  TSLA: "TSLA",
-  AMZN: "AMZN",
-  MSFT: "MSFT",
-  META: "META",
-  GOOG: "GOOG",
-  GOOGL: "GOOGL",
-  AMD: "AMD",
-  IWM: "IWM",
 };
 
 interface YahooOption {

@@ -1,17 +1,6 @@
 export const TICKERS = [
-  { symbol: "SPY", name: "SPDR S&P 500 ETF", type: "etf" },
-  { symbol: "QQQ", name: "Invesco QQQ Trust", type: "etf" },
-  { symbol: "NDX", name: "NASDAQ-100 Index", type: "index" },
   { symbol: "SPX", name: "S&P 500 Index", type: "index" },
-  { symbol: "AAPL", name: "Apple Inc.", type: "stock" },
-  { symbol: "NVDA", name: "NVIDIA Corp.", type: "stock" },
-  { symbol: "TSLA", name: "Tesla Inc.", type: "stock" },
-  { symbol: "AMZN", name: "Amazon.com Inc.", type: "stock" },
-  { symbol: "MSFT", name: "Microsoft Corp.", type: "stock" },
-  { symbol: "META", name: "Meta Platforms", type: "stock" },
-  { symbol: "GOOGL", name: "Alphabet Inc.", type: "stock" },
-  { symbol: "AMD", name: "AMD Inc.", type: "stock" },
-  { symbol: "IWM", name: "iShares Russell 2000 ETF", type: "etf" },
+  { symbol: "NDX", name: "NASDAQ-100 Index", type: "index" },
 ] as const;
 
 export type TickerSymbol = (typeof TICKERS)[number]["symbol"];
@@ -39,14 +28,13 @@ export type TabId = (typeof DASHBOARD_TABS)[number]["id"];
 
 export const ACCESS_KEY = "BEX-2024-LIVE";
 
-export const DEFAULT_REFRESH_MS = 60_000;
+export const DEFAULT_REFRESH_MS = 10_000;
 
 /** Cash index tickers whose options chain is fetched from this ETF on Yahoo. */
 export const INDEX_OPTIONS_UNDERLYING: Partial<
-  Record<TickerSymbol, Extract<TickerSymbol, "QQQ" | "SPY">>
+  Record<TickerSymbol, Extract<TickerSymbol, "SPX">>
 > = {
-  NDX: "QQQ",
-  SPX: "SPY",
+  NDX: "SPX",
 };
 
 export function isIndexSymbol(s: TickerSymbol): boolean {

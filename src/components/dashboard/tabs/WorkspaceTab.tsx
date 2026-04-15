@@ -489,9 +489,7 @@ export default function WorkspaceTab(props: WorkspaceTabProps) {
             </div>
             <div className="mt-1 rounded border border-[#202020] bg-[#121212] px-2 py-1 text-[10px]">
               Feed mode:{" "}
-              <span className={live ? "text-emerald-300" : "text-amber-300"}>
-                {live ? "LIVE" : "DEMO"}
-              </span>
+              <span className="text-emerald-300">LIVE</span>
             </div>
           </div>
         </div>

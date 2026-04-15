@@ -138,10 +138,10 @@ export default function BiasTab({
         <div className="flex items-center gap-1.5 text-[10px] text-neutral-500">
           <span
             className={`h-1.5 w-1.5 rounded-full ${
-              live ? "animate-pulse bg-emerald-500" : "bg-amber-500"
+              live ? "animate-pulse bg-emerald-500" : "bg-emerald-500"
             }`}
           />
-          {live ? "LIVE" : "DEMO"}
+          LIVE
         </div>
       </div>
 

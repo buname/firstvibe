@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { Download, Copy, Maximize2, Minimize2 } from "lucide-react";
 import type { OptionContract } from "@/lib/gex-engine";
 import { useElementFullscreen } from "@/hooks/useElementFullscreen";
+import { formatCompactNumber, formatCompactSigned } from "@/lib/number-format";
 
 // Black-Scholes helpers for Charm
 const R = 0.043;
@@ -163,17 +164,11 @@ export default function StrikeTableTab({ chain, spotPrice }: Props) {
   }
 
   function fmtGex(n: number) {
-    const abs = Math.abs(n);
-    const s = n >= 0 ? "+" : "";
-    if (abs >= 1e6) return `${s}${(n / 1e6).toFixed(0)}K`;
-    if (abs >= 1000) return `${s}${(n / 1000).toFixed(0)}`;
-    return `${s}${n.toFixed(0)}`;
+    return formatCompactSigned(n);
   }
 
   function fmtOI(n: number) {
-    if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
-    if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
-    return `${n}`;
+    return formatCompactNumber(n);
   }
 
   const columns: { key: SortKey; label: string; align: "left" | "right" | "center" }[] = [
@@ -209,6 +204,25 @@ export default function StrikeTableTab({ chain, spotPrice }: Props) {
     navigator.clipboard.writeText(`${header}\n${body}`).catch(() => {});
   }
 
+  if (chain.length === 0) {
+    return (
+      <div className="h-full flex flex-col p-3 gap-2 bg-black">
+        <div className="text-sm font-mono font-bold tracking-wider text-[#e8e8e8]">
+          Strike Table
+        </div>
+        <div className="rounded border border-[#1a1a1a] p-3 text-[10px] font-mono text-[#666]">
+          Loading index options data...
+        </div>
+        <div className="flex-1 rounded border border-[#1a1a1a] bg-[#0d0d0d] p-3">
+          <div className="h-4 w-40 animate-pulse rounded bg-white/10" />
+          <div className="mt-2 h-3 w-full animate-pulse rounded bg-white/5" />
+          <div className="mt-1 h-3 w-full animate-pulse rounded bg-white/5" />
+          <div className="mt-1 h-3 w-3/4 animate-pulse rounded bg-white/5" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div ref={rootRef} className="h-full flex flex-col p-3 gap-2 bg-black">
       {/* Header */}
@@ -218,7 +232,7 @@ export default function StrikeTableTab({ chain, spotPrice }: Props) {
             Strike Table
           </h2>
           <p className="text-[10px] font-mono text-[#444] mt-0.5">
-            SPY · {activeExp ? `1 EXP` : "All Exp"} · options chain by strike
+            Selected index · {activeExp ? `1 EXP` : "All Exp"} · options chain by strike
           </p>
         </div>
         <div className="flex items-center gap-2">

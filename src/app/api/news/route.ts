@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const RSS_URLS = [
   "https://feeds.finance.yahoo.com/rss/2.0/headline?s=SPY&region=US&lang=en-US",
-  "https://feeds.finance.yahoo.com/rss/2.0/headline?s=QQQ&region=US&lang=en-US",
+  "https://feeds.finance.yahoo.com/rss/2.0/headline?s=NDX&region=US&lang=en-US",
 ];
 
 export type Headline = {

@@ -169,7 +169,7 @@ export default function TerminalTab(props: Props) {
     lastUpdate &&
     `[${lastUpdate.toLocaleTimeString("en-US", {
       hour: "2-digit", minute: "2-digit", second: "2-digit",
-    })}] DATA ${live ? "LIVE" : "DEMO"} — ${symbol} @ ${displaySpot.toFixed(2)} · NET GEX ${fmtBillions(totalNetGex)}`;
+    })}] DATA LIVE — ${symbol} @ ${displaySpot.toFixed(2)} · NET GEX ${fmtBillions(totalNetGex)}`;
 
   return (
     <WidgetDataProvider value={widgetData}>
@@ -181,7 +181,7 @@ export default function TerminalTab(props: Props) {
               Terminal
             </h2>
             <span className="text-neutral-600">
-              {live ? "LIVE" : "DEMO"} · ALT+E edit
+              LIVE · ALT+E edit
             </span>
           </div>
           <div className="flex items-center gap-1.5">

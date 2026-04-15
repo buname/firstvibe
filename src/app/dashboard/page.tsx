@@ -43,10 +43,14 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
-  const [symbol, setSymbol] = useState<TickerSymbol>("SPY");
+  const [symbol, setSymbol] = useState<TickerSymbol>("SPX");
   const [activeTab, setActiveTab] = useState<TabId>("terminal");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [refreshMs, setRefreshMs] = useState(60_000);
+  const [refreshMs, setRefreshMs] = useState(10_000);
+
+  const setPrimarySymbol = (next: TickerSymbol) => {
+    setSymbol(next === "NDX" ? "NDX" : "SPX");
+  };
 
   const { data, refresh, selectedExpiry, setSelectedExpiry } = useMarketData(
     symbol,
@@ -135,7 +139,7 @@ export default function DashboardPage() {
           <CompareTab
             primarySymbol={symbol}
             onOpenInTerminal={(s) => {
-              setSymbol(s);
+              setPrimarySymbol(s);
               setActiveTab("terminal");
             }}
           />
@@ -186,9 +190,17 @@ export default function DashboardPage() {
           <LevelsTab
             keyLevels={data.keyLevels}
             atmIvPct={data.atmIvPct}
+            atmIvDecimal={data.atmIvDecimal}
+            daysToExpiry={data.daysToExpiry}
+            expectedMove={data.expectedMove}
+            projectedHigh={data.projectedHigh}
+            projectedLow={data.projectedLow}
+            estimatedLevels={data.estimatedLevels}
+            optionsDataSource={data.optionsDataSource}
+            optionsSourceNote={data.optionsSourceNote}
             symbol={symbol}
             spotPrice={data.spotPrice}
-            onSymbolChange={setSymbol}
+            onSymbolChange={setPrimarySymbol}
           />
         );
       case "strikes":
@@ -217,7 +229,7 @@ export default function DashboardPage() {
           <CompareTab
             primarySymbol={symbol}
             onOpenInTerminal={(s) => {
-              setSymbol(s);
+              setPrimarySymbol(s);
               setActiveTab("terminal");
             }}
           />
@@ -267,7 +279,7 @@ export default function DashboardPage() {
     <div className="h-screen flex flex-col bg-black overflow-hidden">
       <Header
         symbol={symbol}
-        onSymbolChange={setSymbol}
+        onSymbolChange={setPrimarySymbol}
         spotPrice={data?.displaySpot ?? data?.spotPrice ?? 0}
         change={data?.change ?? 0}
         changePct={data?.changePct ?? 0}

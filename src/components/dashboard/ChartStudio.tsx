@@ -154,12 +154,14 @@ export default function ChartStudio({
   const lastSyncedSymbolRef = useRef<string | null>(null);
   const prevChartTypeRef = useRef<ChartType>("candlestick");
   const prevTimeframeRef = useRef<Timeframe>("3M");
-  const prevTickerRef = useRef("SPY");
+  const prevTickerRef = useRef("SPX");
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [tooltipData, setTooltipData] = useState<TooltipData | null>(null);
   const [switchError, setSwitchError] = useState<string | null>(null);
+  const [remoteBars, setRemoteBars] = useState<OHLCVBar[] | null>(null);
+  const [dataLimited, setDataLimited] = useState(false);
   const [activeDrawTool, setActiveDrawTool] = useState<DrawTool>("none");
   const [drawColor, setDrawColor] = useState("#22c55e");
   const [linesMenuOpen, setLinesMenuOpen] = useState(false);
@@ -186,11 +188,6 @@ export default function ChartStudio({
   }, [selectedTicker, setSelectedTicker, symbol]);
 
   useEffect(() => {
-    // Debug trace for ticker propagation check.
-    console.log("[ChartStudio] selectedTicker changed:", selectedTicker);
-  }, [selectedTicker]);
-
-  useEffect(() => {
     const key = "bex-chart-studio";
     try {
       const raw = localStorage.getItem(key);
@@ -212,20 +209,57 @@ export default function ChartStudio({
 
   const tickerMeta = useMemo(() => resolveChartTicker(selectedTicker), [selectedTicker]);
   const effectiveSpot = tickerMeta.dashboardSymbol === symbol ? spotPrice : tickerMeta.referencePrice;
+
+  useEffect(() => {
+    let cancelled = false;
+    const dashboardSymbol = tickerMeta.dashboardSymbol ?? "SPX";
+    const fetchCandles = async () => {
+      try {
+        const res = await fetch(
+          `/api/market-data/candles?symbol=${dashboardSymbol}&timeframe=${timeframe}`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) throw new Error("Candles request failed");
+        const payload = (await res.json()) as {
+          bars?: OHLCVBar[];
+          fallback?: boolean;
+        };
+        if (cancelled) return;
+        const nextBars = Array.isArray(payload.bars) ? payload.bars : [];
+        if (nextBars.length > 0) {
+          setRemoteBars(nextBars);
+          setDataLimited(false);
+        } else {
+          setRemoteBars(null);
+          setDataLimited(true);
+        }
+      } catch {
+        if (cancelled) return;
+        setRemoteBars(null);
+        setDataLimited(true);
+      }
+    };
+    void fetchCandles();
+    return () => {
+      cancelled = true;
+    };
+  }, [tickerMeta.dashboardSymbol, timeframe]);
+
   const baseBars = useMemo(
     () => generateOHLCV(tickerMeta.referencePrice, timeframe, selectedTicker),
     [selectedTicker, timeframe, tickerMeta.referencePrice]
   );
   const bars = useMemo<OHLCVBar[]>(() => {
-    if (baseBars.length === 0) return baseBars;
-    const next = [...baseBars];
+    const sourceBars = remoteBars && remoteBars.length > 0 ? remoteBars : baseBars;
+    if (sourceBars.length === 0) return sourceBars;
+    const next = [...sourceBars];
     const last = { ...next[next.length - 1] };
     last.close = +effectiveSpot.toFixed(2);
     last.high = Math.max(last.high, last.close);
     last.low = Math.min(last.low, last.close);
     next[next.length - 1] = last;
     return next;
-  }, [baseBars, effectiveSpot]);
+  }, [remoteBars, baseBars, effectiveSpot]);
 
   const clearDrawings = useCallback(() => {
     const safeRemoveSeries = (series: unknown) => {
@@ -739,6 +773,11 @@ export default function ChartStudio({
               >
                 Retry
               </button>
+            </div>
+          )}
+          {dataLimited && (
+            <div className="absolute left-2 top-2 z-20 rounded border border-white/10 bg-black/70 px-2 py-1 text-[10px] font-mono text-[#d4d4d8]">
+              Data limited - using fallback bars
             </div>
           )}
           {tooltipData && (

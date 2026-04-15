@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
   const originCheck = validateApiOrigin(req);
   if (!originCheck.ok) return originCheck.response;
 
-  const tickersParam = req.nextUrl.searchParams.get("tickers") || "SPY,QQQ";
+  const tickersParam = req.nextUrl.searchParams.get("tickers") || "SPX,NDX";
   const days = Math.min(
     365,
     Math.max(1, Number(req.nextUrl.searchParams.get("days")) || 60)
@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
   const tickers = tickersParam
     .split(",")
     .map((t) => t.trim().toUpperCase())
-    .filter(Boolean)
-    .slice(0, 16);
+    .filter((t) => t === "SPX" || t === "NDX")
+    .slice(0, 2);
 
   const squeeze = await fetchSqueezeMetricsSnapshot();
 
@@ -66,7 +66,8 @@ export async function GET(req: NextRequest) {
   const errors: Array<{ ticker: string; message: string }> = [];
 
   const run = async (ticker: string) => {
-    const pack = await fetchYahooFullChain(ticker, {
+    const proxySymbol = ticker === "SPX" ? "SPY" : "QQQ";
+    const pack = await fetchYahooFullChain(proxySymbol, {
       mode: "withinDays",
       maxDays: days,
       maxExpirations: 16,
@@ -96,7 +97,7 @@ export async function GET(req: NextRequest) {
     const thr = 0.02;
 
     rows.push({
-      ticker: pack.symbol,
+      ticker,
       spot,
       totalNetGexBillions: totalNetGex,
       gammaFlip: levels.gammaFlip,

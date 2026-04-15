@@ -35,8 +35,8 @@ interface ChartStudioState {
 export const useChartStudioStore = create<ChartStudioState>()(
   persist(
     (set) => ({
-      selectedTicker: "SPY",
-      activeTicker: "SPY",
+      selectedTicker: "SPX",
+      activeTicker: "SPX",
       timeframe: "3M",
       chartType: "candlestick",
       showVolume: true,
@@ -119,7 +119,7 @@ export const useChartStudioStore = create<ChartStudioState>()(
         const state = (persisted ?? {}) as Partial<ChartStudioState> & {
           activeTicker?: string;
         };
-        const rawTicker = state.selectedTicker ?? state.activeTicker ?? "SPY";
+        const rawTicker = state.selectedTicker ?? state.activeTicker ?? "SPX";
         const resolved = resolveChartTicker(rawTicker);
         return {
           ...state,
